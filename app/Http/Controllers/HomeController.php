@@ -13,7 +13,7 @@ class HomeController extends Controller
     		$q=$request->q;
     		$posts=Post::where('title','like','%'.$q.'%')->orderBy('id','desc')->paginate(1);
     	}else{
-    		$posts=Post::orderBy('id','desc')->paginate(1);
+    		$posts=Post::orderBy('id','desc')->paginate(2);
     	}
         return view('home',['posts'=>$posts]);
     }
@@ -38,13 +38,68 @@ class HomeController extends Controller
 
     function category(Request $request,$cat_slug,$cat_id){
         $category=Category::find($cat_id);
-        $posts=Post::where('cat_id',$cat_id)->orderBy('id','desc')->paginate(1);
+        $posts=Post::where('cat_id',$cat_id)->orderBy('id','desc')->paginate(2);
         return view('category',['posts'=>$posts,'category'=>$category]);
     }
 
     // All Categories
     function all_category(){
-        $categories=Category::orderBy('id','desc')->paginate(5);
+        $categories=Category::orderBy('id','desc')->paginate(2);
         return view('categories',['categories'=>$categories]);
+    }
+
+    ///add user post
+
+    function save_post_form(){
+        $cats=Category::all();
+        return view('save-post-form',['cats'=>$cats]);
+    }
+
+    // Save Data
+    function save_post_data(Request $request){
+        $request->validate([
+            'title'=>'required',
+            'category'=>'required',
+            'detail'=>'required',
+        ]);
+
+        // Post Thumbnail
+        if($request->hasFile('post_thumb')){
+            $image1=$request->file('post_thumb');
+            $reThumbImage=time().'.'.$image1->getClientOriginalExtension();
+            $dest1=public_path('/imgs/thumb');
+            $image1->move($dest1,$reThumbImage);
+        }else{
+            $reThumbImage='na';
+        }
+
+        // Post Full Image
+        if($request->hasFile('post_image')){
+            $image2=$request->file('post_image');
+            $reFullImage=time().'.'.$image2->getClientOriginalExtension();
+            $dest2=public_path('/imgs/full');
+            $image2->move($dest2,$reFullImage);
+        }else{
+            $reFullImage='na';
+        }
+
+        $post=new Post;
+        $post->user_id=$request->user()->id;
+        $post->cat_id=$request->category;
+        $post->title=$request->title;
+        $post->thumb=$reThumbImage;
+        $post->full_img=$reFullImage;
+        $post->details=$request->detail;
+        $post->tags=$request->tags;
+        $post->status=1;
+        $post->save();
+
+        return redirect('save-post-form')->with('success','Post has been added');
+    }
+
+    // Manage Posts
+    function manage_posts(Request $request){
+        $posts=Post::where('user_id',$request->user()->id)->orderBy('id','desc')->get();
+        return view('manage-posts',['data'=>$posts]);
     }
 }

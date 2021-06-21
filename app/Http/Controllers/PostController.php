@@ -74,6 +74,7 @@ class PostController extends Controller
         $post->full_img=$reFullImage;
         $post->details=$request->detail;
         $post->tags=$request->tags;
+        $post->view=0;
         $post->save();
 
         return redirect('admin/post/create')->with('success','Data has been added');
